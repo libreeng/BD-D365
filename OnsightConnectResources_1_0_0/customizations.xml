@@ -1,0 +1,88 @@
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Entities></Entities>
+  <Roles></Roles>
+  <Workflows></Workflows>
+  <FieldSecurityProfiles></FieldSecurityProfiles>
+  <Templates />
+  <EntityMaps />
+  <EntityRelationships />
+  <OrganizationSettings />
+  <optionsets />
+  <WebResources>
+    <WebResource>
+      <WebResourceId>{3b2efe42-e975-eb11-a812-000d3af3ff5e}</WebResourceId>
+      <Name>new_connectIcon</Name>
+      <DisplayName>Onsight Connect icon</DisplayName>
+      <WebResourceType>11</WebResourceType>
+      <IntroducedVersion>1.0.0</IntroducedVersion>
+      <IsEnabledForMobileClient>1</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>1</IsAvailableForMobileOffline>
+      <DependencyXml>&lt;Dependencies&gt;&lt;Dependency componentType="WebResource"/&gt;&lt;/Dependencies&gt;</DependencyXml>
+      <IsCustomizable>0</IsCustomizable>
+      <CanBeDeleted>1</CanBeDeleted>
+      <IsHidden>0</IsHidden>
+      <FileName>/WebResources/new_connectIcon3B2EFE42-E975-EB11-A812-000D3AF3FF5E</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{1fa80c5b-e975-eb11-a812-000d3af3ff5e}</WebResourceId>
+      <Name>new_workspaceIcon</Name>
+      <DisplayName>Onsight Workspace icon</DisplayName>
+      <WebResourceType>11</WebResourceType>
+      <IntroducedVersion>1.0.0</IntroducedVersion>
+      <IsEnabledForMobileClient>1</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>1</IsAvailableForMobileOffline>
+      <DependencyXml>&lt;Dependencies&gt;&lt;Dependency componentType="WebResource"/&gt;&lt;/Dependencies&gt;</DependencyXml>
+      <IsCustomizable>0</IsCustomizable>
+      <CanBeDeleted>1</CanBeDeleted>
+      <IsHidden>0</IsHidden>
+      <FileName>/WebResources/new_workspaceIcon1FA80C5B-E975-EB11-A812-000D3AF3FF5E</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{5d43c8cc-c976-eb11-a812-000d3af3ff5e}</WebResourceId>
+      <Name>new_OnsightConnectApi</Name>
+      <DisplayName>Onsight Connect JS Library</DisplayName>
+      <WebResourceType>3</WebResourceType>
+      <IntroducedVersion>1.0.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <DependencyXml>&lt;Dependencies&gt;&lt;Dependency componentType="WebResource"&gt;&lt;Library name="new_platformDetect" displayName="Platform Detection" languagecode="" description="" libraryUniqueId="{00057377-9978-4e75-cac0-517b202204a5}"/&gt;&lt;Library name="new_protocolCheck" displayName="Protocol Check" languagecode="" description="" libraryUniqueId="{682711d2-e939-7d17-a08a-5ce808022b1d}"/&gt;&lt;/Dependency&gt;&lt;/Dependencies&gt;</DependencyXml>
+      <IsCustomizable>1</IsCustomizable>
+      <CanBeDeleted>1</CanBeDeleted>
+      <IsHidden>0</IsHidden>
+      <FileName>/WebResources/new_OnsightConnectApi5D43C8CC-C976-EB11-A812-000D3AF3FF5E</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{ff0ebaff-c976-eb11-a812-000d3af3ff5e}</WebResourceId>
+      <Name>new_platformDetect</Name>
+      <DisplayName>Platform Detection</DisplayName>
+      <WebResourceType>3</WebResourceType>
+      <IntroducedVersion>1.0.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <DependencyXml>&lt;Dependencies&gt;&lt;Dependency componentType="WebResource"/&gt;&lt;/Dependencies&gt;</DependencyXml>
+      <IsCustomizable>1</IsCustomizable>
+      <CanBeDeleted>1</CanBeDeleted>
+      <IsHidden>0</IsHidden>
+      <FileName>/WebResources/new_platformDetectFF0EBAFF-C976-EB11-A812-000D3AF3FF5E</FileName>
+    </WebResource>
+    <WebResource>
+      <WebResourceId>{4eaa4813-ca76-eb11-a812-000d3af3ff5e}</WebResourceId>
+      <Name>new_protocolCheck</Name>
+      <DisplayName>Protocol Check</DisplayName>
+      <WebResourceType>3</WebResourceType>
+      <IntroducedVersion>1.0.0</IntroducedVersion>
+      <IsEnabledForMobileClient>0</IsEnabledForMobileClient>
+      <IsAvailableForMobileOffline>0</IsAvailableForMobileOffline>
+      <DependencyXml>&lt;Dependencies&gt;&lt;Dependency componentType="WebResource"/&gt;&lt;/Dependencies&gt;</DependencyXml>
+      <IsCustomizable>1</IsCustomizable>
+      <CanBeDeleted>1</CanBeDeleted>
+      <IsHidden>0</IsHidden>
+      <FileName>/WebResources/new_protocolCheck4EAA4813-CA76-EB11-A812-000D3AF3FF5E</FileName>
+    </WebResource>
+  </WebResources>
+  <CustomControls />
+  <EntityDataProviders />
+  <Languages>
+    <Language>1033</Language>
+  </Languages>
+</ImportExportXml>

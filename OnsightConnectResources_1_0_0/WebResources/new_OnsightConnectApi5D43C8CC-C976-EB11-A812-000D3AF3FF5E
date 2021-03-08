@@ -1,0 +1,463 @@
+// depending on where this script is utilized (e.g. within an HTML web resource),
+// we may have to obtain the Xrm object from the parent
+var xrm = typeof(Xrm) !== "undefined" ? Xrm : parent.Xrm;
+var globalContext = xrm ? xrm.Utility.getGlobalContext() : {};
+var clientContext = globalContext ? globalContext.client : {};
+
+const workspaceUrl = "https://workspace.librestream.com/onsight/ui/#!/search/default";
+
+// URI for the launch request REST endpoint
+const apiEndpointUrl = "https://onsight.librestream.com/OamRestAPI/api/launchrequest";
+
+// OPM intermediate launch page
+const opmLaunchPage = "https://onsight.librestream.com/OamAdministrator/AccountServices/Default.aspx";
+const externalUri = "https://onsight.librestream.com/OamAdministrator/"
+
+// Platform types supported for launching Onsight Connect
+const PlatformTypes = {
+    PC: "PC",
+    Android: "Android",
+    iOS: "iOS",
+    Unknown: "Unknown"
+};
+
+// Regex for Xrm.WebApi calls returning an array of entities
+const WebApiExpandExpr = /(\w+)\(\$select\=(\w+)\)$/;
+
+// Given an entity name, define a route to the underlying systemuser's email address
+// e.g., a BookableResourceBooking has a reference to a BookableResource, who is
+// a systemuser, who has an email address. This struct is used by getEmailAddressAsync().
+const EmailMappings = {
+    "msdyn_workorder": {
+        expand: "msdyn_msdyn_workorder_bookableresourcebooking_WorkOrder($select=bookableresourcebookingid)",
+        continueWith: "bookableresourcebooking"
+    },
+    "bookableresourcebooking": {
+        select: "_resource_value",
+        continueWith: "bookableresource"
+    },
+    "bookableresource": {
+        select: "_userid_value",
+        continueWith: "systemuser"
+    },
+    "systemuser": {
+        select: "internalemailaddress"
+    }
+};
+
+/**
+ * Removes all curly braces from the given string.
+ * @param {*} text The string from which curly braces are to be removed.
+ */
+function removeBraces(text) {
+    return text.replace(/[\{\}]/g, '');
+}
+
+/**
+ * Reads the customer's Onsight API key from the pre-defined environment variable "OnsightAPIKey".
+ * Customers must set this environment variable before using the Onsight integration.
+ */
+async function getApiKeyAsync() {
+    // Librestream API key issued to the domain to which the Onsight user is part of
+    console.log("++getApiKeyAsync");
+    const result = await Xrm.WebApi.retrieveRecord("environmentvariablevalue", "738f3d87-5a7c-eb11-a812-000d3af3a657", "?$select=value");
+    console.log("--getApiKeyAsync");
+    return result.value;
+}
+
+/**
+ * Uses a mapping struct (such as an element of EmailMappings) to extract a value
+ * from the given recordResult.
+ * @param {*} recordResult 
+ * @param {*} recordMapping 
+ */
+function mapResultToValue(recordResult, recordMapping) {
+    // If the mapping defines an "expand" property, it means we expect an array result
+    if (recordMapping.expand) {
+        // Result must be an array
+        let matches = recordMapping.expand.match(WebApiExpandExpr);
+        if (matches && matches.length === 3) {
+            let arrName = matches[1];
+            let elemName = matches[2];
+
+            // Grab the first element in the array (if available) and map the result value
+            // from the expand expression's inner "$select".
+            let arr = recordResult[arrName];
+            if (Array.isArray(arr) && arr.length > 0) {
+                return arr[0][elemName];
+            }
+        } 
+    }
+    else if (recordMapping.select) {
+        // Result must be a single value
+        return recordResult[recordMapping.select];
+    }
+
+    // If we get here, we have no explicit way of mapping to a result value, so just return the resultRecord
+    return recordResult;
+}
+
+/**
+ * Retrieve an entity value based on the given initial entity name and ID,
+ * along with a mappings object which directs how the record retrieval is
+ * mapped to a result value.
+ * 
+ * Use this method to chain together record retrievals when the result value
+ * is referenced by another entity (the starting point).
+ * @param {*} mappings 
+ * @param {string} entityLogicalName 
+ * @param {string} entityId 
+ * @param {int?} depth 
+ * @returns {Promise<any>}
+ */
+async function retrieveRecordAsync(mappings, entityLogicalName, entityId, depth = 0) {
+    let mapping = mappings[entityLogicalName];
+    let options = "";
+
+    if (mapping.select) {
+        options += (options.length === 0) ? "?" : "&";
+        options += "$select=" + mapping.select;
+    }
+    if (mapping.expand) {
+        options += (options.length === 0) ? "?" : "&";
+        options += "$expand=" + mapping.expand;
+    }
+
+    try {
+        let result = await Xrm.WebApi.retrieveRecord(entityLogicalName, entityId, options);
+        let resultValue = mapResultToValue(result, mapping);
+
+        if (!mapping.continueWith) {
+            return resultValue;
+        }
+
+        return await retrieveRecordAsync(mappings, mapping.continueWith, resultValue, depth++);
+    } 
+    catch (error) {
+        console.log(error.message);
+    }
+}
+
+/**
+ * Get the email address associated with the given entity. For any entity other than systemuser,
+ * we will drill down into "child" entities until we find the corresponding systemuser and their email.
+ * 
+ * The entityType may be one of:
+ *      msdyn_workorder, bookableresourcebooking, bookableresource, or systemuser
+ * @param {string} entityType 
+ * @param {string} entityId 
+ * @returns {Promise<string>} The email address.
+ */
+function getEmailAddressAsync(entityType, entityId) {
+    return retrieveRecordAsync(EmailMappings, entityType, entityId);
+}
+
+/**
+ * Get the client OS platform type
+ * @return the OS platform
+ */
+function getPlatformType() {
+    var osFamily = platform && platform.os ? platform.os.family : "";
+    switch(osFamily) {
+        case "Windows":
+            return PlatformTypes.PC;
+        case "Android":
+            return PlatformTypes.Android;
+        case "iOS":
+            return PlatformTypes.iOS;
+        default:
+            return PlatformTypes.Unknown;
+    }
+}
+
+/**
+ * Retrieve the Customer Asset associated with the given Work Order.
+ * @param {*} workOrderId ID of the Work Order for which the primary Customer Asset is requested.
+ */
+async function getWorkOrderAssetAsync(workOrderId) {
+    const result = await Xrm.WebApi.online.retrieveRecord("msdyn_workorder", workOrderId, "?$select=_msdyn_customerasset_value");
+    return result["_msdyn_customerasset_value"];
+}
+
+/**
+ * Build the launch request body parameter object.
+ * @param {string} callerEmail Email address of user initiating the call
+ * @param {string} calleeEmail Email address of user contact to call
+ * @param {object} metadataItems List of Key-value pair metadata items
+ * @return launch request body parameter object
+ */
+function buildLaunchRequestData(callerEmail, calleeEmail, metadataItems) {
+    var platformType = getPlatformType()
+    return {
+        email: callerEmail,
+        platform: platformType,
+        calleeEmail: calleeEmail,
+        metadataItems: metadataItems
+    };
+}
+
+/**
+ * Navigate to the given URL using the Dynamics Xrm.Navigation API
+ * @param {string} url URL to navigate to
+ */
+function navigateToUrl(url) {
+    console.log("++navigateToUrl: " + url);
+    if (xrm) {
+        xrm.Navigation.openUrl(url);
+    }
+    console.log("--navigateToUrl");
+}
+
+/**
+ * Open the given URL in a new browser tab
+ * @param {string} url URL to open in a new browser tab
+ */
+function openNewTab(url) {
+    var clientType = clientContext.getClient();
+    console.log("openUrl: client type: " + clientType + ", URL: " + url);
+    if (clientType === "Mobile") {
+        // the Dynamics mobile application does not support opening
+        // new tabs in a browser using window.open
+        navigateToUrl(url);
+    }
+    else {
+        window.open(url, '_blank');
+    }
+}
+
+/**
+ * Get the entity which triggered the button click event. This could be the primary
+ * entity (if the main form command button was clicked) or a sub-entity if the button
+ * is located within a subgrid (such as the Bookable Resources subgrid section within
+ * the Work Order main form).
+ * @param {*} primaryControl 
+ */
+function getTriggeringEntity(primaryControl) {
+    // If there's a grid associated w/the given control, we have a list
+    // of entities and must pick the first selected one.
+    const grid = primaryControl.getGrid && primaryControl.getGrid();
+    if (grid) {
+        const selectedEntities = grid.getSelectedRows().getAll();
+        return (selectedEntities.length === 0) ? null : selectedEntities[0];
+    }
+
+    // Otherwise we're dealing with a top-level (MainForm) entity
+    return primaryControl.data.entity;
+}
+
+/**
+ * Launch Onsight Connect, optionally including Onsight user and callee information
+ * in the launch request.
+ * 
+ * This is the main hook for all Onsight Connect command buttons.
+ * @param {any} primaryControl
+ * @param {bool} includeUserInfo true to include current user info in request
+ * @param {bool} includeContactInfo true to include callee info in request
+ * @return none
+ */
+async function launchOnsightConnect(primaryControl, includeUserInfo, includeContactInfo) {
+    console.log("++launchOnsightConnect: include user info: " + includeUserInfo + ", contact info: " + includeContactInfo);
+
+    // Get the entity in context (could be a selected entity within a subgrid, for example)
+    const contextEntity = getTriggeringEntity(primaryControl);
+    if (!contextEntity) {
+        console.log("++launchOnsightConnect: skipping launch; no entity in context.");
+    }
+
+    var platformType = getPlatformType();
+    var clientType = clientContext.getClient();
+    const callerEmail = await getEmailAddressAsync("systemuser", xrm.Page.context.getUserId());
+    let calleeEmail = await getEmailAddressAsync(contextEntity._entityType, contextEntity._entityId.guid);
+
+    let metadata = {};
+    if (primaryControl.entityReference) {
+        // Get the page's top-level entity, which may differ from the contextEntity above
+        const topLevelEntity = primaryControl.entityReference;
+        if (topLevelEntity.entityType === "msdyn_workorder") {
+            metadata["WorkOrder"] = removeBraces(topLevelEntity.id);
+            metadata["Asset"] = await getWorkOrderAssetAsync(topLevelEntity.id);
+        }
+    }
+
+    const launchRequestData = buildLaunchRequestData(callerEmail, calleeEmail, metadata);
+    if (clientType === "Mobile" && platformType == PlatformTypes.Android) {
+        // can't launch directly by setting the window location or navigating
+        // using an Android intent uri (intent://) or custom uri (onsightconnect://).
+        // Go to the intermediate launch page
+        launchOCPage(includeUserInfo, includeContactInfo, launchRequestData);
+    }
+    else {
+        launchOCAjax(launchRequestData);
+    }
+
+    console.log("--launchOnsightConnect");
+}
+
+/**
+ * Launch Onsight connect by opening the intermediate OPM launch page
+ * @param {bool} includeUserInfo true to include current user info in request
+ * @param {bool} includeContactInfo true to include callee info in request
+ * @param {object} launchRequestData Onsight Connect launch request parameters
+ * @return none
+ */
+async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestData) {
+    console.log("++launchOCPage");
+    const apiKey = await getApiKeyAsync();
+
+    var url = opmLaunchPage + "?mlaunch";
+        url += "&ak=" + encodeURIComponent(apiKey);
+        if (includeUserInfo) url += "&u=" + encodeURIComponent(launchRequestData.username);
+        if (includeUserInfo) url += "&p=" + encodeURIComponent(launchRequestData.password);
+        if (includeContactInfo) url += "&ce=" + encodeURIComponent(launchRequestData.calleeEmail);
+        url += "&m=" + encodeURIComponent(JSON.stringify(launchRequestData.metadataItems));
+    openNewTab(url);
+
+    console.log("--launchOCPage");
+}
+
+/**
+ * Launch Onsight Connect by calling the OPM REST API and using the
+ * resulting URL to launch tha application directly
+ * @param {object} launchRequestData Onsight Connect launch request parameters
+ * @return none
+ */
+function launchOCAjax(launchRequestData) {
+    console.log("++launchOCAjax");
+    sendOCApiLaunchRequest(launchRequestData).then((launchUri) => {
+        if (getPlatformType() == PlatformTypes.iOS || 
+            getPlatformType() == PlatformTypes.Android) {
+            navigateToUrl(launchUri)
+        }
+        else {
+            // use the protocol check helper library to launch the
+            // app with the custom URI scheme in a browser-specific way
+            protocolCheck(launchUri,
+                () => {
+                    //xrm.Navigation.openAlertDialog( { text: "Failed to launch Onsight" });
+                    console.log("OC failed to launch, is it installed?");
+                },
+                () => {
+                    console.log("OC should have launched");
+            });
+        }
+    },
+    (reason) => {
+        console.log("launchOCAjax: failed to get launch URI, error: " + reason);
+    });
+    console.log("--launchOCAjax");
+}
+
+/**
+ * Use XHR to send launch request to OPM REST API
+ * @param {object} launchRequestBodyData Launch request body parameter
+ * @return {Promise} A Promise the will resolve the OC launch URL when fulfilled 
+ */
+async function sendOCApiLaunchRequest(launchRequestBodyData) {
+    const apiKey = await getApiKeyAsync();
+    return new Promise((resolve, reject) => {
+        var launchRequest = new XMLHttpRequest();
+        launchRequest.addEventListener("readystatechange", function() {
+            console.log("sendOCApiLaunchRequest.readystatechange: ready state: " + this.readyState + ", status: " + this.status);
+            if (this.readyState == XMLHttpRequest.DONE) {
+                if (this.status == 200) {
+                    var launchUri = this.responseText.replace(/"/g, '');
+                    console.log("sendOCApiLaunchRequest: Successfully retrieved OC launch URL: " + launchUri);
+                    resolve(launchUri);
+                }
+                else if (this.status == 400) {
+                    var errorResult = JSON.parse(this.responseText);
+                    console.log("sendOCApiLaunchRequest: Launch request failed with error: " + this.responseText);
+                    reject(errorResult);
+                }
+            }
+        });
+        launchRequest.open("POST", apiEndpointUrl);
+        launchRequest.setRequestHeader("Authorization", "ls Bearer: " + apiKey);
+        launchRequest.setRequestHeader("Content-Type", "application/json");
+        var launchRequestBody = JSON.stringify(launchRequestBodyData);
+        console.log("sendOCApiLaunchRequest: send POST request to API endpoint, body data: " + launchRequestBody);
+        launchRequest.send(launchRequestBody);
+        console.log("--sendOCApiLaunchRequest");
+    });
+}
+
+/**
+ * Open Workspace in a new tab. Search for assets by given full text term.
+ * @return none
+ */
+function searchWorkspace(primaryControl) {
+    console.log("++searchWorkspace");
+    const entity = getTriggeringEntity(primaryControl);
+    if (!entity) {
+        console.log("++searchWorkspace: skipping launch; no entity in context.");
+    }
+
+    // Use the primary entity's ID as the Workspace search term.
+    // IOW, use a WorkOrder ID or Asset ID, depending on the current main form.
+    let searchTerm = removeBraces(entity._entityId.guid);
+
+    console.log(`++searchWorkspace: search term: ${searchTerm}`);
+    var wsUrl = workspaceUrl + "?f=" + encodeURIComponent("\"" + searchTerm + "\"");
+    console.log(`searchWorkspace: open URL in new tab: ${wsUrl}`);
+    openNewTab(wsUrl);
+
+    console.log("--searchWorkspace");
+}
+
+/**
+ * Utility method to test different navigation methods from Dynamics 365
+ * browser and mobile client applications
+ * @param {string} navType Navigation method (WindowLocation, NewTab, XrmNavigation)
+ * @param {string} locationType Destination type (IntentOrUniversal, CustomUri, or External)
+ * @return none
+ */
+function navigationTest(navType, locationType) {
+    if (getPlatformType() == PlatformTypes.iOS) {
+        console.log("navigationTest: do navigation after a timeout...");
+        setTimeout(() => navigationTestInternal(navType, locationType), 2500);
+    }
+    else {
+        navigationTestInternal(navType, locationType);
+    }
+}
+
+/**
+ * Utility method to test different navigation methods from Dynamics 365
+ * browser and mobile client applications
+ * @param {string} navType Navigation method (WindowLocation, NewTab, XrmNavigation)
+ * @param {string} locationType Destination type (IntentOrUniversal, CustomUri, or External)
+ */
+function navigationTestInternal(navType, locationType) {
+    console.log("++navigationTestInternal: type: " + navType);
+    var uri = opmLaunchPage;
+    switch (locationType) {
+        case "IntentOrUniversal":
+        uri = getPlatformType() == PlatformTypes.Android ? intentUri : universalLinkBase;
+        break;
+        case "CustomUri":
+        uri = customUri;
+        break;
+        case "External":
+        uri = externalUri;
+        break;
+        default:
+        uri = opmLaunchPage;
+    }
+
+    console.log("navigationTestInternal: URI: " + uri);
+
+    switch (navType) {
+        case "WindowLocation":
+            console.log("navigationTestInternal: set window.location to " + uri);
+            window.location = uri;
+        break;
+        case "NewTab":
+            console.log("navigationTestInternal: open new tab with uri: " + uri);
+            window.open(uri, "_blank");
+        break;
+        case "XrmNavigation":
+            console.log("navigationTestInternal: use Xrm.Navigation to open uri: " + uri);
+            navigateToUrl(uri);
+        break;
+    }
+}

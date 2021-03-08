@@ -1,0 +1,12 @@
+<environmentvariabledefinition schemaname="new_OnsightAPIKey">
+  <description default="Your Onsight Connect API key">
+    <label description="Your Onsight Connect API key" languagecode="1033" />
+  </description>
+  <displayname default="OnsightAPIKey">
+    <label description="OnsightAPIKey" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <type>100000000</type>
+</environmentvariabledefinition>
