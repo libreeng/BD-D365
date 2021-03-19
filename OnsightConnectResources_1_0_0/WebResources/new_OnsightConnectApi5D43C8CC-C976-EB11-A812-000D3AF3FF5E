@@ -385,7 +385,7 @@ async function sendOCApiLaunchRequest(launchRequestBodyData) {
  * Open Workspace in a new tab. Search for assets by given full text term.
  * @return none
  */
-function searchWorkspace(primaryControl) {
+async function searchWorkspace(primaryControl) {
     console.log("++searchWorkspace");
     const entity = getTriggeringEntity(primaryControl);
     if (!entity) {
@@ -395,6 +395,16 @@ function searchWorkspace(primaryControl) {
     // Use the primary entity's ID as the Workspace search term.
     // IOW, use a WorkOrder ID or Asset ID, depending on the current main form.
     let searchTerm = removeBraces(entity._entityId.guid);
+
+    // From the Customer Asset page, include any and all related Work Order Ids in the Workspace search
+    if (entity._entityType === "msdyn_customerasset") {
+        let relatedWOsResponse = await Xrm.WebApi.online.retrieveRecord("msdyn_customerasset", entity._entityId.guid, "?$expand=msdyn_msdyn_customerasset_msdyn_workorder_CustomerAsset($select=msdyn_workorderid)");
+        var msdyn_customerassetid = relatedWOsResponse["msdyn_customerassetid"];
+        for (let i = 0; i < relatedWOsResponse.msdyn_msdyn_customerasset_msdyn_workorder_CustomerAsset.length; i++) {
+            var relatedWorkOrderId = relatedWOsResponse.msdyn_msdyn_customerasset_msdyn_workorder_CustomerAsset[i]["msdyn_workorderid"];
+            searchTerm += " " + relatedWorkOrderId;
+        }
+    }
 
     console.log(`++searchWorkspace: search term: ${searchTerm}`);
     var wsUrl = workspaceUrl + "?f=" + encodeURIComponent("\"" + searchTerm + "\"");
