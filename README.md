@@ -15,6 +15,10 @@ The integration is split into two solutions due to limitations in the Ribbon Wor
 
 Both solutions have been left as "unmanaged", meaning that they can both continue to be modified as needed.
 
+## Pre-requisites
+
+The Onsight extension stores your Onsight API key in an environment variable. In order to read this variable's value at runtime, each user must have the *Environment Variable Definition* permission enabled. The easiest way to enable this is by enabling it on one or more user roles within Dynamics 365's *Advanced Settings > Security > Security Roles* page, under the **Custom Entities** tab.
+
 ## Installation
 
 1) From source, zip up both the *OnsightConnect_1_0_0* and *OnsightConnectResources_1_0_0* folders into their own respective zip files.
