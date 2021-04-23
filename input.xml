@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PvsPackageData>
+  <ProviderName>Librestream Technologies, Inc.</ProviderName>
+  <PackageFile>package.zip</PackageFile>
+  <SolutionAnchorName>onsight_d365_connector.zip</SolutionAnchorName>
+  <StartDate>04/19/2021</StartDate>
+  <EndDate>01/01/2031</EndDate>
+  <SupportedCountries>US,CA</SupportedCountries>
+  <LearnMoreLink>https://www.librestream.com</LearnMoreLink>
+  <Locales>
+    <PackageLocale Code="1033" IsDefault="true">
+      <Logo>Onsight-32x32.png</Logo>
+      <Terms>
+        <PackageTerm File="EULAOnsightDynamics365Connector.html" />
+      </Terms>
+    </PackageLocale>
+  </Locales>
+</PvsPackageData>

@@ -1,3 +1,5 @@
+'use strict';
+
 // depending on where this script is utilized (e.g. within an HTML web resource),
 // we may have to obtain the Xrm object from the parent
 var xrm = typeof(Xrm) !== "undefined" ? Xrm : parent.Xrm;
@@ -24,26 +26,45 @@ const PlatformTypes = {
 // Regex for Xrm.WebApi calls returning an array of entities
 const WebApiExpandExpr = /(\w+)\(\$select\=(\w+)\)$/;
 
-// Given an entity name, define a route to the underlying systemuser's email address
-// e.g., a BookableResourceBooking has a reference to a BookableResource, who is
-// a systemuser, who has an email address. This struct is used by getEmailAddressAsync().
-const EmailMappings = {
-    "msdyn_workorder": {
-        expand: "msdyn_msdyn_workorder_bookableresourcebooking_WorkOrder($select=bookableresourcebookingid)",
-        continueWith: "bookableresourcebooking"
-    },
-    "bookableresourcebooking": {
-        select: "_resource_value",
-        continueWith: "bookableresource"
-    },
-    "bookableresource": {
-        select: "_userid_value",
-        continueWith: "systemuser"
-    },
-    "systemuser": {
+const SystemUser2Email = [
+    {
+        entityLogicalName: "systemuser",
         select: "internalemailaddress"
     }
-};
+];
+
+const BookableResource2Email = [
+    {
+        entityLogicalName: "bookableresource",
+        select: "_userid_value"
+    },
+    ...SystemUser2Email
+];
+
+const BookableResourceBooking2Email = [
+    {
+        entityLogicalName: "bookableresourcebooking",
+        select: "_resource_value"
+    },
+    ...BookableResource2Email
+];
+
+const WorkOrder2FieldTechEmail = [
+    {
+        entityLogicalName: "msdyn_workorder",
+        expand: "msdyn_msdyn_workorder_bookableresourcebooking_WorkOrder($select=bookableresourcebookingid)"
+    },
+    ...BookableResourceBooking2Email
+];
+
+const WorkOrder2RemoteExpertEmail = [
+    {
+        entityLogicalName: "msdyn_workorder",
+        select: "_msdyn_supportcontact_value"
+    },
+    ...BookableResource2Email
+];
+
 
 /**
  * Removes all curly braces from the given string.
@@ -59,9 +80,7 @@ function removeBraces(text) {
  */
 async function getApiKeyAsync() {
     // Librestream API key issued to the domain to which the Onsight user is part of
-    console.log("++getApiKeyAsync");
     const result = await Xrm.WebApi.retrieveRecord("environmentvariablevalue", "738f3d87-5a7c-eb11-a812-000d3af3a657", "?$select=value");
-    console.log("--getApiKeyAsync");
     return result.value;
 }
 
@@ -104,14 +123,12 @@ function mapResultToValue(recordResult, recordMapping) {
  * 
  * Use this method to chain together record retrievals when the result value
  * is referenced by another entity (the starting point).
- * @param {*} mappings 
- * @param {string} entityLogicalName 
+ * @param {[*]} mappings 
  * @param {string} entityId 
- * @param {int?} depth 
  * @returns {Promise<any>}
  */
-async function retrieveRecordAsync(mappings, entityLogicalName, entityId, depth = 0) {
-    let mapping = mappings[entityLogicalName];
+async function retrieveRecordAsync(mappings, entityId) {
+    let mapping = mappings[0];
     let options = "";
 
     if (mapping.select) {
@@ -123,19 +140,16 @@ async function retrieveRecordAsync(mappings, entityLogicalName, entityId, depth 
         options += "$expand=" + mapping.expand;
     }
 
-    try {
-        let result = await Xrm.WebApi.retrieveRecord(entityLogicalName, entityId, options);
-        let resultValue = mapResultToValue(result, mapping);
+    const entityLogicalName = mapping.entityLogicalName;
 
-        if (!mapping.continueWith) {
-            return resultValue;
-        }
+    let result = await Xrm.WebApi.retrieveRecord(entityLogicalName, entityId, options);
+    let resultValue = mapResultToValue(result, mapping);
 
-        return await retrieveRecordAsync(mappings, mapping.continueWith, resultValue, depth++);
-    } 
-    catch (error) {
-        console.log(error.message);
+    if (mappings.length === 1) {
+        return resultValue;
     }
+
+    return await retrieveRecordAsync(mappings.slice(1), resultValue);
 }
 
 /**
@@ -146,10 +160,30 @@ async function retrieveRecordAsync(mappings, entityLogicalName, entityId, depth 
  *      msdyn_workorder, bookableresourcebooking, bookableresource, or systemuser
  * @param {string} entityType 
  * @param {string} entityId 
+ * @param {string} callTargetType "fieldtech" | "expert" | null | undefined
  * @returns {Promise<string>} The email address.
  */
-function getEmailAddressAsync(entityType, entityId) {
-    return retrieveRecordAsync(EmailMappings, entityType, entityId);
+function getEmailAddressAsync(entityType, entityId, callTargetType) {
+    let mappings = [];
+    switch (entityType) {
+        case "msdyn_workorder":
+            mappings = callTargetType === "fieldtech" ? WorkOrder2FieldTechEmail : WorkOrder2RemoteExpertEmail;
+            break;
+        case "bookableresourcebooking":
+            mappings = BookableResourceBooking2Email;
+            break;
+        case "bookableresource":
+            mappings = BookableResource2Email;
+            break;
+        case "systemuser":
+            mappings = SystemUser2Email;
+            break;
+        case "contact":
+            mappings = Contact2Email;
+            break;
+    }
+
+    return retrieveRecordAsync(mappings, entityId);
 }
 
 /**
@@ -201,11 +235,9 @@ function buildLaunchRequestData(callerEmail, calleeEmail, metadataItems) {
  * @param {string} url URL to navigate to
  */
 function navigateToUrl(url) {
-    console.log("++navigateToUrl: " + url);
     if (xrm) {
         xrm.Navigation.openUrl(url);
     }
-    console.log("--navigateToUrl");
 }
 
 /**
@@ -214,7 +246,6 @@ function navigateToUrl(url) {
  */
 function openNewTab(url) {
     var clientType = clientContext.getClient();
-    console.log("openUrl: client type: " + clientType + ", URL: " + url);
     if (clientType === "Mobile") {
         // the Dynamics mobile application does not support opening
         // new tabs in a browser using window.open
@@ -251,23 +282,25 @@ function getTriggeringEntity(primaryControl) {
  * 
  * This is the main hook for all Onsight Connect command buttons.
  * @param {any} primaryControl
- * @param {bool} includeUserInfo true to include current user info in request
+ * @param {bool} callTargetType the entity type of the target callee. If null or undefined,
+       the default target type will be used, based on the current context. For Work Orders,
+       this can be set to either "fieldtech" (to call the assigned field tech/bookable resource booking)
+       or to "expert" (to call the remote expert/support contact).
  * @param {bool} includeContactInfo true to include callee info in request
  * @return none
  */
-async function launchOnsightConnect(primaryControl, includeUserInfo, includeContactInfo) {
-    console.log("++launchOnsightConnect: include user info: " + includeUserInfo + ", contact info: " + includeContactInfo);
-
+async function launchOnsightConnect(primaryControl, callTargetType) {
     // Get the entity in context (could be a selected entity within a subgrid, for example)
     const contextEntity = getTriggeringEntity(primaryControl);
     if (!contextEntity) {
-        console.log("++launchOnsightConnect: skipping launch; no entity in context.");
+        // Skipping launch; no entity in context
+        return;
     }
 
     var platformType = getPlatformType();
     var clientType = clientContext.getClient();
     const callerEmail = await getEmailAddressAsync("systemuser", xrm.Page.context.getUserId());
-    let calleeEmail = await getEmailAddressAsync(contextEntity._entityType, contextEntity._entityId.guid);
+    let emailTargetKey = contextEntity._entityType;
 
     let metadata = {};
     if (primaryControl.entityReference) {
@@ -279,18 +312,18 @@ async function launchOnsightConnect(primaryControl, includeUserInfo, includeCont
         }
     }
 
+    let calleeEmail = await getEmailAddressAsync(emailTargetKey, contextEntity._entityId.guid, callTargetType);
+
     const launchRequestData = buildLaunchRequestData(callerEmail, calleeEmail, metadata);
     if (clientType === "Mobile" && platformType == PlatformTypes.Android) {
         // can't launch directly by setting the window location or navigating
         // using an Android intent uri (intent://) or custom uri (onsightconnect://).
         // Go to the intermediate launch page
-        launchOCPage(includeUserInfo, includeContactInfo, launchRequestData);
+        launchOCPage(true, true, launchRequestData);
     }
     else {
         launchOCAjax(launchRequestData);
     }
-
-    console.log("--launchOnsightConnect");
 }
 
 /**
@@ -301,7 +334,6 @@ async function launchOnsightConnect(primaryControl, includeUserInfo, includeCont
  * @return none
  */
 async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestData) {
-    console.log("++launchOCPage");
     const apiKey = await getApiKeyAsync();
 
     var url = opmLaunchPage + "?mlaunch";
@@ -311,8 +343,6 @@ async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestDa
         if (includeContactInfo) url += "&ce=" + encodeURIComponent(launchRequestData.calleeEmail);
         url += "&m=" + encodeURIComponent(JSON.stringify(launchRequestData.metadataItems));
     openNewTab(url);
-
-    console.log("--launchOCPage");
 }
 
 /**
@@ -322,7 +352,6 @@ async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestDa
  * @return none
  */
 function launchOCAjax(launchRequestData) {
-    console.log("++launchOCAjax");
     sendOCApiLaunchRequest(launchRequestData).then((launchUri) => {
         if (getPlatformType() == PlatformTypes.iOS || 
             getPlatformType() == PlatformTypes.Android) {
@@ -334,17 +363,16 @@ function launchOCAjax(launchRequestData) {
             protocolCheck(launchUri,
                 () => {
                     //xrm.Navigation.openAlertDialog( { text: "Failed to launch Onsight" });
-                    console.log("OC failed to launch, is it installed?");
+                    //console.log("OC failed to launch, is it installed?");
                 },
                 () => {
-                    console.log("OC should have launched");
+                    //console.log("OC should have launched");
             });
         }
     },
     (reason) => {
-        console.log("launchOCAjax: failed to get launch URI, error: " + reason);
+        //console.log("launchOCAjax: failed to get launch URI, error: " + reason);
     });
-    console.log("--launchOCAjax");
 }
 
 /**
@@ -357,16 +385,13 @@ async function sendOCApiLaunchRequest(launchRequestBodyData) {
     return new Promise((resolve, reject) => {
         var launchRequest = new XMLHttpRequest();
         launchRequest.addEventListener("readystatechange", function() {
-            console.log("sendOCApiLaunchRequest.readystatechange: ready state: " + this.readyState + ", status: " + this.status);
             if (this.readyState == XMLHttpRequest.DONE) {
                 if (this.status == 200) {
                     var launchUri = this.responseText.replace(/"/g, '');
-                    console.log("sendOCApiLaunchRequest: Successfully retrieved OC launch URL: " + launchUri);
                     resolve(launchUri);
                 }
                 else if (this.status == 400) {
                     var errorResult = JSON.parse(this.responseText);
-                    console.log("sendOCApiLaunchRequest: Launch request failed with error: " + this.responseText);
                     reject(errorResult);
                 }
             }
@@ -375,9 +400,7 @@ async function sendOCApiLaunchRequest(launchRequestBodyData) {
         launchRequest.setRequestHeader("Authorization", "ls Bearer: " + apiKey);
         launchRequest.setRequestHeader("Content-Type", "application/json");
         var launchRequestBody = JSON.stringify(launchRequestBodyData);
-        console.log("sendOCApiLaunchRequest: send POST request to API endpoint, body data: " + launchRequestBody);
         launchRequest.send(launchRequestBody);
-        console.log("--sendOCApiLaunchRequest");
     });
 }
 
@@ -386,10 +409,10 @@ async function sendOCApiLaunchRequest(launchRequestBodyData) {
  * @return none
  */
 async function searchWorkspace(primaryControl) {
-    console.log("++searchWorkspace");
     const entity = getTriggeringEntity(primaryControl);
     if (!entity) {
-        console.log("++searchWorkspace: skipping launch; no entity in context.");
+        // Skipping launch; no entity in context
+        return;
     }
 
     // Use the primary entity's ID as the Workspace search term.
@@ -406,12 +429,8 @@ async function searchWorkspace(primaryControl) {
         }
     }
 
-    console.log(`++searchWorkspace: search term: ${searchTerm}`);
     var wsUrl = workspaceUrl + "?f=" + encodeURIComponent("\"" + searchTerm + "\"");
-    console.log(`searchWorkspace: open URL in new tab: ${wsUrl}`);
     openNewTab(wsUrl);
-
-    console.log("--searchWorkspace");
 }
 
 /**
@@ -423,7 +442,6 @@ async function searchWorkspace(primaryControl) {
  */
 function navigationTest(navType, locationType) {
     if (getPlatformType() == PlatformTypes.iOS) {
-        console.log("navigationTest: do navigation after a timeout...");
         setTimeout(() => navigationTestInternal(navType, locationType), 2500);
     }
     else {
@@ -438,7 +456,6 @@ function navigationTest(navType, locationType) {
  * @param {string} locationType Destination type (IntentOrUniversal, CustomUri, or External)
  */
 function navigationTestInternal(navType, locationType) {
-    console.log("++navigationTestInternal: type: " + navType);
     var uri = opmLaunchPage;
     switch (locationType) {
         case "IntentOrUniversal":
@@ -454,19 +471,14 @@ function navigationTestInternal(navType, locationType) {
         uri = opmLaunchPage;
     }
 
-    console.log("navigationTestInternal: URI: " + uri);
-
     switch (navType) {
         case "WindowLocation":
-            console.log("navigationTestInternal: set window.location to " + uri);
             window.location = uri;
         break;
         case "NewTab":
-            console.log("navigationTestInternal: open new tab with uri: " + uri);
             window.open(uri, "_blank");
         break;
         case "XrmNavigation":
-            console.log("navigationTestInternal: use Xrm.Navigation to open uri: " + uri);
             navigateToUrl(uri);
         break;
     }

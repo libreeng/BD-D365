@@ -21,16 +21,18 @@ The Onsight extension stores your Onsight API key in an environment variable. In
 
 ## Installation
 
-1) From source, zip up both the *OnsightConnect_1_0_0* and *OnsightConnectResources_1_0_0* folders into their own respective zip files.
-2) From your Dynamics 365 account, navigate to the Power Apps site.
-3) Select *Solutions* from the left-hand navigation panel.
-4) From the top toolbar, select *Import*.
-5) Browse to the *OnsightConnectResources_1_0_0.zip* file you archived in step 1 and upload it.
-6) Upload the *OnsightConnect_1_0_0.zip* file as well.
-7) Ensure that both solutions are now listed under *Solutions*.
-8) Click on the *Onsight Connect resources* solution.
-9) Click on the *OnsightAPIKey* list item. A panel should open up on the right-hand side.
-10) In the *Current Value* text box, enter your Onsight API Key and click the Save button.
+In the project source's root directory, a Powershell script, *bundle.ps1*, should be run. This will generate several artifacts within the *build* subdirectory. The main artifact, *bundle/Onsight_Dynamics_365_Field_Service_Connector.zip*, is an AppSource package which can be published to Microsoft's AppPackage store. However, for development or testing purposes, the extension's solutions can be uploaded directly to a D365 installation, as follows:
+
+1) From your Dynamics 365 account, navigate to the Power Apps site.
+2) Select *Solutions* from the left-hand navigation panel.
+3) From the top toolbar, select *Import*.
+4) From your local build/stage02/PkgFolder, upload the two zip files:
+   1) onsight_d365_connector.zip
+   2) onsight_d365_connector_resources.zip
+5) Ensure that both solutions are now listed under *Solutions*.
+6) Click on the *Onsight Connect resources* solution.
+7) Click on the *OnsightAPIKey* list item. A panel should open up on the right-hand side.
+8)  In the *Current Value* text box, enter your Onsight API Key and click the Save button.
 
 ## Using the Integration
 

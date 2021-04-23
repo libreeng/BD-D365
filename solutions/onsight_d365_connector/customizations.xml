@@ -2,11 +2,6 @@
   <Entities>
     <Entity>
       <Name LocalizedName="Bookable Resource" OriginalName="Bookable Resource">BookableResource</Name>
-      <EntityInfo>
-        <entity Name="BookableResource" unmodified="1">
-          <attributes />
-        </entity>
-      </EntityInfo>
       <RibbonDiffXml>
         <CustomActions>
           <CustomAction Id="new.bookableresource.Button2.Button.CustomAction" Location="Mscrm.Form.bookableresource.MainTab.Save.Controls._children" Sequence="38">
@@ -37,8 +32,6 @@
             <Actions>
               <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
                 <CrmParameter Value="SelectedControl" />
-                <BoolParameter Value="true" />
-                <BoolParameter Value="true" />
               </JavaScriptFunction>
             </Actions>
           </CommandDefinition>
@@ -48,8 +41,6 @@
             <Actions>
               <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
                 <CrmParameter Value="PrimaryControl" />
-                <BoolParameter Value="true" />
-                <BoolParameter Value="true" />
               </JavaScriptFunction>
             </Actions>
           </CommandDefinition>
@@ -128,139 +119,7 @@
       </RibbonDiffXml>
     </Entity>
     <Entity>
-      <Name LocalizedName="Bookable Resource Booking" OriginalName="Bookable Resource Booking">BookableResourceBooking</Name>
-      <EntityInfo>
-        <entity Name="BookableResourceBooking" unmodified="1">
-          <attributes />
-        </entity>
-      </EntityInfo>
-      <RibbonDiffXml>
-        <CustomActions>
-          <CustomAction Id="new.bookableresourcebooking.Button1.Button.CustomAction" Location="Mscrm.HomepageGrid.bookableresourcebooking.MainTab.Management.Controls._children" Sequence="0">
-            <CommandUIDefinition>
-              <Button Alt="$LocLabels:new.bookableresourcebooking.Button1.Button.Alt" Command="new.bookableresourcebooking.Command2.PrimaryControlCommand" Id="new.bookableresourcebooking.Button1.Button" LabelText="$LocLabels:new.bookableresourcebooking.Button1.Button.LabelText" Sequence="0" TemplateAlias="o8" ToolTipTitle="$LocLabels:new.bookableresourcebooking.Button1.Button.ToolTipTitle" ToolTipDescription="$LocLabels:new.bookableresourcebooking.Button1.Button.ToolTipDescription" ModernImage="$webresource:new_connectIcon" />
-            </CommandUIDefinition>
-          </CustomAction>
-          <CustomAction Id="new.bookableresourcebooking.Button2.Button.CustomAction" Location="Mscrm.Form.bookableresourcebooking.MainTab.Save.Controls._children" Sequence="38">
-            <CommandUIDefinition>
-              <Button Alt="$LocLabels:new.bookableresourcebooking.Button2.Button.Alt" Command="new.bookableresourcebooking.Command2.PrimaryControlCommand" Id="new.bookableresourcebooking.Button2.Button" LabelText="$LocLabels:new.bookableresourcebooking.Button2.Button.LabelText" Sequence="38" TemplateAlias="o1" ToolTipTitle="$LocLabels:new.bookableresourcebooking.Button2.Button.ToolTipTitle" ToolTipDescription="$LocLabels:new.bookableresourcebooking.Button2.Button.ToolTipDescription" ModernImage="$webresource:new_connectIcon" />
-            </CommandUIDefinition>
-          </CustomAction>
-          <CustomAction Id="new.bookableresourcebooking.Button3.Button.CustomAction" Location="Mscrm.SubGrid.bookableresourcebooking.MainTab.Management.Controls._children" Sequence="18">
-            <CommandUIDefinition>
-              <Button Alt="$LocLabels:new.bookableresourcebooking.Button3.Button.Alt" Command="new.bookableresourcebooking.Command1.SelectedControlCommand" Id="new.bookableresourcebooking.Button3.Button" LabelText="$LocLabels:new.bookableresourcebooking.Button3.Button.LabelText" Sequence="18" TemplateAlias="o1" ToolTipTitle="$LocLabels:new.bookableresourcebooking.Button3.Button.ToolTipTitle" ToolTipDescription="$LocLabels:new.bookableresourcebooking.Button3.Button.ToolTipDescription" ModernImage="$webresource:new_connectIcon" />
-            </CommandUIDefinition>
-          </CustomAction>
-        </CustomActions>
-        <Templates>
-          <RibbonTemplates Id="Mscrm.Templates"></RibbonTemplates>
-        </Templates>
-        <CommandDefinitions>
-          <CommandDefinition Id="new.bookableresourcebooking.Command1.SelectedControlCommand">
-            <EnableRules>
-              <EnableRule Id="new.bookableresourcebooking.EnableRule0.RequireSelectionRule" />
-            </EnableRules>
-            <DisplayRules />
-            <Actions>
-              <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
-                <CrmParameter Value="SelectedControl" />
-                <BoolParameter Value="true" />
-                <BoolParameter Value="true" />
-              </JavaScriptFunction>
-            </Actions>
-          </CommandDefinition>
-          <CommandDefinition Id="new.bookableresourcebooking.Command2.PrimaryControlCommand">
-            <EnableRules />
-            <DisplayRules />
-            <Actions>
-              <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
-                <CrmParameter Value="PrimaryControl" />
-                <BoolParameter Value="true" />
-                <BoolParameter Value="true" />
-              </JavaScriptFunction>
-            </Actions>
-          </CommandDefinition>
-        </CommandDefinitions>
-        <RuleDefinitions>
-          <TabDisplayRules />
-          <DisplayRules />
-          <EnableRules>
-            <EnableRule Id="new.bookableresourcebooking.EnableRule0.RequireSelectionRule">
-              <SelectionCountRule AppliesTo="PrimaryEntity" Minimum="1" Maximum="1" Default="false" />
-            </EnableRule>
-          </EnableRules>
-        </RuleDefinitions>
-        <LocLabels>
-          <LocLabel Id="new.bookableresourcebooking.Button1.Button.Alt">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button1.Button.LabelText">
-            <Titles>
-              <Title description="Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button1.Button.ToolTipDescription">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button1.Button.ToolTipTitle">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button2.Button.Alt">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button2.Button.LabelText">
-            <Titles>
-              <Title description="Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button2.Button.ToolTipDescription">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button2.Button.ToolTipTitle">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button3.Button.Alt">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button3.Button.LabelText">
-            <Titles>
-              <Title description="Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button3.Button.ToolTipDescription">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.bookableresourcebooking.Button3.Button.ToolTipTitle">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-        </LocLabels>
-      </RibbonDiffXml>
-    </Entity>
-    <Entity>
       <Name LocalizedName="Customer Asset" OriginalName="Customer Asset">msdyn_customerasset</Name>
-      <EntityInfo>
-        <entity Name="msdyn_customerasset" unmodified="1">
-          <attributes />
-        </entity>
-      </EntityInfo>
       <RibbonDiffXml>
         <CustomActions>
           <CustomAction Id="new.msdyn_customerasset.Button2.Workspace.CustomAction" Location="Mscrm.Form.msdyn_customerasset.MainTab.Save.Controls._children" Sequence="1">
@@ -379,9 +238,18 @@
       </EntityInfo>
       <RibbonDiffXml>
         <CustomActions>
-          <CustomAction Id="new.msdyn_workorder.Button2.ConnectButton.CustomAction" Location="Mscrm.Form.msdyn_workorder.MainTab.Save.Controls._children" Sequence="38">
+          <CustomAction Id="new.msdyn_workorder.Button13.Button.CustomAction" Location="Mscrm.Form.msdyn_workorder.MainTab.Save.Controls._children" Sequence="32">
             <CommandUIDefinition>
-              <Button Alt="$LocLabels:new.msdyn_workorder.Button2.ConnectButton.Alt" Command="new.msdyn_workorder.Command0.LaunchConnect" Id="new.msdyn_workorder.Button2.ConnectButton" LabelText="$LocLabels:new.msdyn_workorder.Button2.ConnectButton.LabelText" Sequence="38" TemplateAlias="o1" ToolTipTitle="$LocLabels:new.msdyn_workorder.Button2.ConnectButton.ToolTipTitle" ToolTipDescription="$LocLabels:new.msdyn_workorder.Button2.ConnectButton.ToolTipDescription" ModernImage="$webresource:new_connectIcon" />
+              <FlyoutAnchor Command="Mscrm.Enabled" Id="new.msdyn_workorder.Button13.Button" LabelText="$LocLabels:new.msdyn_workorder.Button13.Button.LabelText" Sequence="32" TemplateAlias="o1" ModernImage="$webresource:new_connectIcon">
+                <Menu Id="new.msdyn_workorder.Button13.Button.Menu">
+                  <MenuSection Id="new.msdyn_workorder.Section14.Section" Sequence="5" DisplayMode="Menu16">
+                    <Controls Id="new.msdyn_workorder.Section14.Section.Controls">
+                      <Button Command="new.msdyn_workorder.Command0.CallFieldTech" Id="new.msdyn_workorder.Button15.Button" LabelText="$LocLabels:new.msdyn_workorder.Button15.Button.LabelText" Sequence="10" ModernImage="$webresource:new_connectIcon" />
+                      <Button Command="new.msdyn_workorder.Command2.CallRemoteExpert" Id="new.msdyn_workorder.Button16.Button" LabelText="$LocLabels:new.msdyn_workorder.Button16.Button.LabelText" Sequence="15" ModernImage="$webresource:new_connectIcon" />
+                    </Controls>
+                  </MenuSection>
+                </Menu>
+              </FlyoutAnchor>
             </CommandUIDefinition>
           </CustomAction>
           <CustomAction Id="new.msdyn_workorder.Button6.WorkspaceButton.CustomAction" Location="Mscrm.Form.msdyn_workorder.MainTab.Save.Controls._children" Sequence="42">
@@ -394,14 +262,13 @@
           <RibbonTemplates Id="Mscrm.Templates"></RibbonTemplates>
         </Templates>
         <CommandDefinitions>
-          <CommandDefinition Id="new.msdyn_workorder.Command0.LaunchConnect">
+          <CommandDefinition Id="new.msdyn_workorder.Command0.CallFieldTech">
             <EnableRules />
             <DisplayRules />
             <Actions>
               <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
                 <CrmParameter Value="PrimaryControl" />
-                <BoolParameter Value="true" />
-                <BoolParameter Value="true" />
+                <StringParameter Value="fieldtech" />
               </JavaScriptFunction>
             </Actions>
           </CommandDefinition>
@@ -414,6 +281,16 @@
               </JavaScriptFunction>
             </Actions>
           </CommandDefinition>
+          <CommandDefinition Id="new.msdyn_workorder.Command2.CallRemoteExpert">
+            <EnableRules />
+            <DisplayRules />
+            <Actions>
+              <JavaScriptFunction FunctionName="launchOnsightConnect" Library="$webresource:new_OnsightConnectApi">
+                <CrmParameter Value="PrimaryControl" />
+                <StringParameter Value="expert" />
+              </JavaScriptFunction>
+            </Actions>
+          </CommandDefinition>
         </CommandDefinitions>
         <RuleDefinitions>
           <TabDisplayRules />
@@ -421,24 +298,19 @@
           <EnableRules />
         </RuleDefinitions>
         <LocLabels>
-          <LocLabel Id="new.msdyn_workorder.Button2.ConnectButton.Alt">
-            <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
-            </Titles>
-          </LocLabel>
-          <LocLabel Id="new.msdyn_workorder.Button2.ConnectButton.LabelText">
+          <LocLabel Id="new.msdyn_workorder.Button13.Button.LabelText">
             <Titles>
               <Title description="Onsight Connect" languagecode="1033" />
             </Titles>
           </LocLabel>
-          <LocLabel Id="new.msdyn_workorder.Button2.ConnectButton.ToolTipDescription">
+          <LocLabel Id="new.msdyn_workorder.Button15.Button.LabelText">
             <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
+              <Title description="Call Field Technician" languagecode="1033" />
             </Titles>
           </LocLabel>
-          <LocLabel Id="new.msdyn_workorder.Button2.ConnectButton.ToolTipTitle">
+          <LocLabel Id="new.msdyn_workorder.Button16.Button.LabelText">
             <Titles>
-              <Title description="Launch Onsight Connect" languagecode="1033" />
+              <Title description="Call Remote Expert" languagecode="1033" />
             </Titles>
           </LocLabel>
           <LocLabel Id="new.msdyn_workorder.Button6.WorkspaceButton.Alt">

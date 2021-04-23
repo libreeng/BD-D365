@@ -1,16 +1,16 @@
-<ImportExportXml version="9.2.21024.142" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<ImportExportXml version="9.2.21041.142" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <SolutionManifest>
-    <UniqueName>OnsightConnectResources</UniqueName>
+    <UniqueName>onsight_d365_connector_resources</UniqueName>
     <LocalizedNames>
-      <LocalizedName description="Onsight Connect resources" languagecode="1033" />
+      <LocalizedName description="Onsight Dynamics 365 Field Service Connector resources" languagecode="1033" />
     </LocalizedNames>
     <Descriptions>
-      <Description description="Contains resources used by the main Onsight Connect solution." languagecode="1033" />
+      <Description description="Contains supplemental resources used by the main Onsight Dynamics 365 Field Service Connector solution." languagecode="1033" />
     </Descriptions>
     <Version>1.0.0</Version>
-    <Managed>0</Managed>
+    <Managed>1</Managed>
     <Publisher>
-      <UniqueName>DefaultPublishercogswellsprockets</UniqueName>
+      <UniqueName>librestreamtechnologiesinc1585022962762</UniqueName>
       <LocalizedNames>
         <LocalizedName description="Default Publisher for cogswellsprockets" languagecode="1033" />
       </LocalizedNames>
