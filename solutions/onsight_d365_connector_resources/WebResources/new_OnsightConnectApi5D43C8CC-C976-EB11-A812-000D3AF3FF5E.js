@@ -221,7 +221,7 @@ async function getWorkOrderAssetAsync(workOrderId) {
  * @return launch request body parameter object
  */
 function buildLaunchRequestData(callerEmail, calleeEmail, metadataItems) {
-    var platformType = getPlatformType()
+    var platformType = getPlatformType();
     return {
         email: callerEmail,
         platform: platformType,
