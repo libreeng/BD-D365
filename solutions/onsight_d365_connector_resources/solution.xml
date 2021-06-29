@@ -81,11 +81,11 @@
       </Addresses>
     </Publisher>
     <RootComponents>
-      <RootComponent type="61" schemaName="new_connectIcon" behavior="0" />
-      <RootComponent type="61" schemaName="new_OnsightConnectApi" behavior="0" />
-      <RootComponent type="61" schemaName="new_platformDetect" behavior="0" />
-      <RootComponent type="61" schemaName="new_protocolCheck" behavior="0" />
-      <RootComponent type="61" schemaName="new_workspaceIcon" behavior="0" />
+      <RootComponent type="61" id="{3b2efe42-e975-eb11-a812-000d3af3ff5e}" schemaName="new_connectIcon" behavior="0" />
+      <RootComponent type="61" id="{5d43c8cc-c976-eb11-a812-000d3af3ff5e}" schemaName="new_OnsightConnectApi" behavior="0" />
+      <RootComponent type="61" id="{ff0ebaff-c976-eb11-a812-000d3af3ff5e}" schemaName="new_platformDetect" behavior="0" />
+      <RootComponent type="61" id="{4eaa4813-ca76-eb11-a812-000d3af3ff5e}" schemaName="new_protocolCheck" behavior="0" />
+      <RootComponent type="61" id="{1fa80c5b-e975-eb11-a812-000d3af3ff5e}" schemaName="new_workspaceIcon" behavior="0" />
     </RootComponents>
     <MissingDependencies />
   </SolutionManifest>
