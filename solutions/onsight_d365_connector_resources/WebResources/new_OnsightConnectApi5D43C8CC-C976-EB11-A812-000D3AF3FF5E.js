@@ -312,7 +312,11 @@ async function launchOnsightConnect(primaryControl, callTargetType) {
         }
     }
 
-    let calleeEmail = await getEmailAddressAsync(emailTargetKey, contextEntity._entityId.guid, callTargetType);
+    let calleeEmail = null;
+    if (emailTargetKey && callTargetType) {
+        // Map a generic contact (eg, "remote expert" or "fieldtech") to an actual person's email address
+        calleeEmail = await getEmailAddressAsync(emailTargetKey, contextEntity._entityId.guid, callTargetType);
+    }
 
     const launchRequestData = buildLaunchRequestData(callerEmail, calleeEmail, metadata);
     if (clientType === "Mobile" && platformType == PlatformTypes.Android) {
@@ -351,7 +355,7 @@ async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestDa
  * @param {object} launchRequestData Onsight Connect launch request parameters
  * @return none
  */
-function launchOCAjax(launchRequestData) {
+function launchOCAjax(launchRequestData) {   
     sendOCApiLaunchRequest(launchRequestData).then((launchUri) => {
         if (getPlatformType() == PlatformTypes.iOS || 
             getPlatformType() == PlatformTypes.Android) {

@@ -2,7 +2,18 @@
 
 ## Overview
 
-The Onsight Connector provides integration within Dynamics 365 to Onsight Connect and Onsight Workspace. It is provided as a set of installable solutions via the Microsoft AppSource catalog.
+The Onsight Connect and Workspace integration consists of two Dynamics 365 solutions:
+* Onsight Connect
+    - Contains ribbon/command bar buttons for Connect and Workspace, with hooks
+      into the custom javascript handlers for each button.
+* Onsight Connect resources
+    - JavaScript customizations
+    - Command Button icons
+    - Environment variable "OnsightAPIKey" for the end customer's Onsight API key.
+
+The integration is split into two solutions due to limitations in the Ribbon Workbench editor, the tool used to add custom buttons to the D365 ribbon/command bar.
+
+Both solutions have been left as "unmanaged", meaning that they can both continue to be modified as needed.
 
 ## Pre-requisites
 
@@ -10,13 +21,18 @@ The Onsight Connector stores your Onsight API key in an environment variable. In
 
 ## Installation
 
-To install the Connector into your D365 tenant, go to the Microsoft AppSource site, https://appsource.microsoft.com/, and search for "Onsight Field Service Connector".
+In the project source's root directory, a Powershell script, *bundle.ps1*, should be run. This will generate several artifacts within the *build* subdirectory. The main artifact, *bundle/Onsight_Dynamics_365_Field_Service_Connector.zip*, is an AppSource package which can be published to Microsoft's AppPackage store. However, for development or testing purposes, the Connectors's solutions can be uploaded directly to a D365 installation, as follows:
 
-From the *Onsight Dynamics 365 Field Service Connector* page, click the "Get It Now" button. After entering some contact information, click "Continue".
-
-Select the D365 environment into which the Connector should be installed.
-
-
+1) From your Dynamics 365 account, navigate to the Power Apps site.
+2) Select *Solutions* from the left-hand navigation panel.
+3) From the top toolbar, select *Import*.
+4) From your local build/stage02/PkgFolder, upload the two zip files:
+   1) onsight_d365_connector.zip
+   2) onsight_d365_connector_resources.zip
+5) Ensure that both solutions are now listed under *Solutions*.
+6) Click on the *Onsight Connect resources* solution.
+7) Click on the *OnsightAPIKey* list item. A panel should open up on the right-hand side.
+8)  In the *Current Value* text box, enter your Onsight API Key and click the Save button.
 
 ## Using the Integration
 
