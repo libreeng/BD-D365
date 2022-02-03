@@ -342,8 +342,7 @@ async function launchOCPage(includeUserInfo, includeContactInfo, launchRequestDa
 
     var url = opmLaunchPage + "?mlaunch";
         url += "&ak=" + encodeURIComponent(apiKey);
-        if (includeUserInfo) url += "&u=" + encodeURIComponent(launchRequestData.username);
-        if (includeUserInfo) url += "&p=" + encodeURIComponent(launchRequestData.password);
+        if (includeUserInfo) url += "&u=" + encodeURIComponent(launchRequestData.email);
         if (includeContactInfo) url += "&ce=" + encodeURIComponent(launchRequestData.calleeEmail);
         url += "&m=" + encodeURIComponent(JSON.stringify(launchRequestData.metadataItems));
     openNewTab(url);

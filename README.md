@@ -16,6 +16,15 @@ From the *Onsight Dynamics 365 Field Service Connector* page, click the "Get It 
 
 Select the D365 environment into which the Connector should be installed.
 
+## Post Installation
+
+After installing, you must enter your Onsight API Key into the designated environment variable.
+
+As a D365 administrator, go to the Power Apps Solutions page https://make.powerapps.com/environments/{tenantId}/solutions and open the Default Solution.
+
+![](images/Connect-EnvVariables.png)
+
+Under the Default Solution's Objects list, locate the Environment Variable named OnsightAPIKey. Open this Environment Variable and set its Current Value to your Onsight API Key. Click Save.
 
 
 ## Using the Integration
