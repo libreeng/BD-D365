@@ -5,6 +5,8 @@ New-Item -Path ".\build" -ItemType Directory
 
 robocopy .\solutions\onsight_d365_connector .\build\stage01a /S
 robocopy .\solutions\onsight_d365_connector_resources .\build\stage01b /S
+robocopy .\solutions\onsight_d365_flow_resources .\build\stage01c /S
+
 # Strip ".js" file extensions (D365 doesn't like them)
 Get-ChildItem -Filter ".\build\stage01b\WebResources\*.js" | Rename-Item -NewName {$_.name -replace ".js","" }
 Get-ChildItem -Filter ".\build\stage01b\WebResources\*.svg" | Rename-Item -NewName {$_.name -replace ".svg","" }
@@ -13,6 +15,7 @@ robocopy . .\build\stage03 [Content_Types].xml input.xml *.html Onsight-32x32.pn
 
 Compress-Archive -Path .\build\stage01a\* -DestinationPath .\build\stage01a\onsight_d365_connector.zip
 Compress-Archive -Path .\build\stage01b\* -DestinationPath .\build\stage01b\onsight_d365_connector_resources.zip
+Compress-Archive -Path .\build\stage01c\* -DestinationPath .\build\stage01c\onsight_d365_flow_resources.zip
 
 Invoke-Command -ScriptBlock { & "$msbuild" OnsightD365Connector.sln -p:RestorePackagesConfig=true -t:restore /property:Configuration=Release /property:Platform="Any CPU" }
 Invoke-Command -ScriptBlock { & "$msbuild" OnsightD365Connector.sln /property:Configuration=Release /property:Platform="Any CPU" }

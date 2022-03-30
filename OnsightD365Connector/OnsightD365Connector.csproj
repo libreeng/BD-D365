@@ -167,6 +167,10 @@
       <Link>PkgFolder\onsight_d365_connector_resources.zip</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="..\build\stage01c\onsight_d365_flow_resources.zip">
+      <Link>PkgFolder\onsight_d365_flow_resources.zip</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

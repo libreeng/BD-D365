@@ -1,0 +1,500 @@
+<html>
+    <head>
+        <style>
+            #accordianChild .ui-accordion .ui-accordion-content .workspaceLink:hover {
+                color: #00a3e0;
+            }
+            
+            #accordianChild .ui-accordion .ui-accordion-content .workspaceLink {
+                color: #0064A3;
+                text-decoration: underline;
+            }
+            #accordianChild .ui-accordion-header.ui-state-active {
+                background: #00a3e0;
+            }
+            
+            #accordianChild .ui-accordion-header.ui-state-hover {
+                background: #00a3e0;
+            }
+            .padding-container {
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                
+            }
+
+            .padding {
+                padding: .1em .1em .1em .1em !important;
+            }
+            
+            .font, h3 {
+                
+                color: rgb(51, 51, 51);
+                font-size: 1rem !important;
+            }
+
+            .font-family {
+                font-family: SegoeUI, "Segoe UI";
+            }
+
+
+            .dd {
+                outline: none;
+                padding-right: 0.5em;
+                padding-left: 0.5em;
+                background-color: white;
+                color: rgb(0, 0, 0);
+                font-size: 1rem;
+                font-weight: 600;
+                border-style: solid;
+                font-style: normal;
+                font-variant: normal;
+                font-family: 'SegoeUI', 'Segoe UI';
+            }
+
+            .center {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                text-align: center;
+            }
+            .fontWeight {
+                font-weight: 600;
+            }
+        </style>
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+        <script type="text/javascript">  
+
+        var workOrderId;
+        var reportUrls = [];
+
+        async function populateWorkFlowsAsync() {
+            document.getElementById('loading').style.display = "block";
+            window.Xrm = parent.Xrm;
+            workOrderId = Xrm.Page.data.entity.getId().replace("{", "").replace("}", "").toLowerCase();
+            await getWorkFlowsForFieldWorker(workOrderId);
+        }
+
+        async function getWorkFlowsForFieldWorker(workOrderId) {
+            const workOrder = await Xrm.WebApi.online.retrieveRecord("msdyn_workorder", workOrderId, "?$expand=msdyn_msdyn_workorder_bookableresourcebooking_WorkOrder($select=_resource_value)");
+            var bookableResourceBooking = workOrder.msdyn_msdyn_workorder_bookableresourcebooking_WorkOrder[0]?._resource_value;
+            if (bookableResourceBooking != null || bookableResourceBooking != undefined) {
+                const bookableResource = await Xrm.WebApi.online.retrieveRecord("bookableresource", bookableResourceBooking, "?$select=_userid_value");
+                var userId = bookableResource._userid_value;
+                const systemUser = await Xrm.WebApi.online.retrieveRecord("systemuser", userId, "?$select=internalemailaddress");
+                var fieldTechEmail = systemUser.internalemailaddress;
+                var fieldTechId;
+                let users = await (await getUsersForTeamAsync(fieldTechEmail)).json();
+                users.forEach(user => {
+                    if (user.emailAddress == fieldTechEmail) {
+                        fieldTechId = user.userId;
+                    }
+                });
+
+                let workFlows = await (await getWorkflowsForActivity()).json();
+                
+                const availableWorkflows = [];
+                workFlows.forEach(workFlow => {
+                    if (workFlow.users == null || workFlow.users.length == 0) {
+                        availableWorkflows.push(workFlow);
+                        return;
+                    }
+                    workFlow.users.forEach(userid => {
+                        if (userid == fieldTechId) {
+                            availableWorkflows.push(workFlow);
+                            return;
+                        }
+                    });
+                });
+
+                var selectedValue = await getSelectedValue(workOrderId);
+                var option = '';
+                document.getElementById("myWorkflows")[0] = new Option('Select a Workflow',0, true, true);
+                if (availableWorkflows != undefined && availableWorkflows.length > 0) {
+                    for (let i = 0; i < availableWorkflows.length; i++) {
+                        availableWorkflows.forEach(function(element,key) {
+                            document.getElementById("myWorkflows")[key + 1] = new Option(element.name,element.templateId);
+                        });
+                    }
+                }
+                
+                var currentSelectedWorkFlow = 0;
+                availableWorkflows.forEach(workflow => {
+                    if (workflow.templateId == selectedValue.new_selectedworkflowid) {
+                        currentSelectedWorkFlow = selectedValue.new_selectedworkflowid;
+                    }
+                });
+
+                document.getElementById('myWorkflows').value = currentSelectedWorkFlow;
+                if (document.getElementById('myWorkflows').value == 0) {
+                    document.getElementById('launchFlowBtn').disabled = true;
+                } else {
+                    document.getElementById('launchFlowBtn').disabled = false;
+                }
+            }
+
+            document.getElementById('mainContent').style.display = "block";
+            document.getElementById('loading').style.display = "none";
+
+        }
+
+        async function getUsersForTeamAsync(fieldTechEmail) {
+            let flowApikey = await (await getFlowTokenAsync()).text();
+            const response = await fetch("https://accounts.flow.librestream.com/api/team/user", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    "Authorization": "Bearer " + flowApikey,
+                },
+                cache: "no-cache"
+            });
+            return response;
+        }
+
+        async function getWorkflowsForActivity() {
+            var availableWorkflows;
+            let flowApikey = await (await getFlowTokenAsync()).text();
+            const response = await fetch("https://gateway.flow.librestream.com/workflows/v1", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    "Authorization": "Bearer " + flowApikey,
+                },
+                cache: "no-cache"
+            });
+            return response;
+        }
+
+        async function getSelectedValue(workOrderId) {
+            return await Xrm.WebApi.online.retrieveRecord("msdyn_workorder", workOrderId, "?$select=new_selectedworkflowid");
+        }
+
+        async function setSelectedValue(option) {
+            var launchFlowBtn = document.getElementById('launchFlowBtn');
+            if (option.value == 0) {
+                launchFlowBtn.disabled = true;
+            } else {
+                launchFlowBtn.disabled = false;
+            }
+            var selectedValue = option.value;
+            var data = {"new_selectedworkflowid" : selectedValue};
+            await Xrm.WebApi.online.updateRecord("msdyn_workorder", workOrderId, data);
+        }
+
+        async function importCompletedWorkflow() {
+            document.getElementById('completedWorkflows').style.display = "none";
+            document.getElementById('importFlowBtn').innerText = "Downloading...";
+            document.getElementById('importFlowBtn').disabled = true;
+            
+            let html = '';
+            let results = 0;
+            const element = document.getElementById('completedWorkflows');
+            
+            let flowApikey = await (await getFlowTokenAsync()).text();
+            await fetch("https://gateway.flow.librestream.com/jobs/v1/", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    "Authorization": "Bearer " + flowApikey,
+                },
+                cache: "no-cache"
+            })
+            .then(response => response.json())
+            .then(async function(completedWorkflows) {
+
+                var workFlowsForWorkOrder = [];
+                for (var workFlow of completedWorkflows) {
+                    if(workFlow.metadata.metadata.msdyn_workorder == workOrderId) {
+                        var jobOfWorkFlowWithDetails = await getAllJobOfWorkFlowWithDetails(workFlow)
+                        .then(workFlowDetails => workFlowDetails.json())
+                        .then(detail => {
+                            workFlowsForWorkOrder.push(detail);
+                        });
+                    }
+                };
+                return workFlowsForWorkOrder;
+            })
+            .then(async function(workFlowsForWorkOrder) {
+                results = workFlowsForWorkOrder.length;
+                html += `
+                        <div style="margin-bottom: 15px;"><div class="accordion">
+                        <h3>Completed Workflows (${results})</h3><div>`;
+
+                workFlowsForWorkOrder.forEach(document => {
+                    html += generateFlowHtml(document);
+                });
+
+                html += '</div></div></div>';
+                element.innerHTML = html;
+                
+                await getCompletedReportAsync(workFlowsForWorkOrder)
+
+                // Xrm.Utility.confirmDialog(workFlowsForWorkOrder.length + " completed Workflows imported.");
+                // Xrm.Utility.confirmDialog(attachmentIds.length + " completed reports imported.");
+            })
+            .catch(error => {
+                console.error("Failed to fetch completed workflows: " + error);
+                document.getElementById('importFlowBtn').disabled = false;
+                document.getElementById('importFlowBtn').innerText = "Import Completed Workflows";
+            })
+            .finally(() => {
+                var classes = {
+                    "ui-accordion-header": "center font font-family padding",
+                    "ui-accordion-content": "padding-container font font-family",
+                    "ui-widget-content": "font font-family"
+                };
+                $(".accordion").accordion({
+                    header: "> h3:not(.item)",
+                    heightStyle: "content",
+                    active: false,
+                    collapsible: true,
+                    classes: classes
+                });
+                document.getElementById('importFlowBtn').disabled = false;
+                document.getElementById('importFlowBtn').innerText = "Import Completed Workflows";
+                if (results == 0) {
+                    $(".accordion").addClass("ui-state-disabled");
+                }
+                document.getElementById('importFlowBtn').innerText = "Import Completed Workflows";
+                document.getElementById('completedWorkflows').style.display = "block";
+            });
+        }
+        
+        async function getAllJobOfWorkFlowWithDetails(workFlow) {
+            let flowApikey = await (await getFlowTokenAsync()).text();
+            const response = await fetch("https://gateway.flow.librestream.com/jobs/v1/bson/" + workFlow.jobId, {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    "Authorization": "Bearer " + flowApikey,
+                },
+                cache: "no-cache"
+            })
+            .catch(error => {
+                console.error("Failed to get Workflow details: " + error);
+            });
+            return response;  
+        }
+
+        async function getCompletedReportAsync(jobOfWorkFlowsForWorkOrder) {
+            var results = [];
+            deleteActivityAttachment();
+            let flowApikey = await (await getFlowTokenAsync()).text();
+            jobOfWorkFlowsForWorkOrder.forEach(jobOfWorkFlow => {
+                fetch('https://gateway.flow.librestream.com/reportgenerator/v1/generate?jobId=' + jobOfWorkFlow.jobId, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: {
+                        "Authorization": "Bearer " + flowApikey,
+                        'Content-Type': 'application/json'
+                    },
+                    cache: "no-cache"
+                })
+                .then(response => response.json())
+                .then(completedReport => {
+                    reportUrls.push(completedReport);
+                    results.push(addAttachmentIntoActivityAsync(completedReport, jobOfWorkFlow));
+                })
+                .catch(error => {
+                    console.error("Failed to attach completed reports: " + error);
+                });
+            });
+            return results;
+        }
+
+        async function deleteActivityAttachment(){
+            // TODO: prevent duplicate file name from being imported instead.
+            const workOrder = await Xrm.WebApi.online.retrieveRecord("msdyn_workorder", workOrderId, "?$expand=msdyn_workorder_Annotations");
+            workOrder?.msdyn_workorder_Annotations.forEach(annotation => {
+                Xrm.WebApi.deleteRecord("annotation", annotation.annotationid);
+            })
+        }
+
+        async function addAttachmentIntoActivityAsync(completedReport, jobOfWorkFlow) {
+            await fetch(completedReport.reportUrl, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-cache"
+            })
+            .then(response => response.blob())
+            .then(attachmentData => {
+                return insertAttachmentIntoActivity(completedReport, jobOfWorkFlow, attachmentData);
+            })
+            .catch(error => {
+                document.getElementById('importFlowBtn').disabled = false;
+                console.error("Failed to attach completed reports: " + error);
+                // this is for potential CORS issues.
+                if (error.toString().includes('Failed to fetch')){
+                    return insertAttachmentIntoActivity(completedReport, jobOfWorkFlow, null);
+                }
+            });
+        }
+
+        async function insertAttachmentIntoActivity(completedReport, jobOfWorkFlow, attachmentData) {
+            var entity = {};
+            entity.subject = jobOfWorkFlow.metadata.jobTitle;
+            entity.notetext = "<a href=" + completedReport.reportUrl + ">Download Completed Report</a>";
+            if (attachmentData != null) {
+                entity.filename = jobOfWorkFlow.metadata.jobTitle + '.pdf';
+                entity.isdocument = true;
+                var reader = new FileReader();
+                await reader.readAsDataURL(attachmentData);
+                reader.onloadend = function () {
+                    var base64String = reader.result.split(',')[1];
+                    entity.documentbody = base64String;
+                    createAnnotationAsync(entity, workOrderId);
+                }
+            } else {
+                createAnnotationAsync(entity);
+            }
+        }
+
+        async function createAnnotationAsync(entity) {
+            entity["objectid_msdyn_workorder@odata.bind"] = "/msdyn_workorders(" + workOrderId + ")"; 
+
+            await Xrm.WebApi.online.createRecord("annotation", entity)
+            .then(result => {
+                // Xrm.Page.getAttribute("Timeline").refresh();
+                Xrm.Page.getControl("Timeline").refresh();
+                return result.id; 
+            })
+            .catch(error => {
+                Xrm.Utility.alertDialog(error.message);   
+            });
+        }
+
+        async function launchOnsightFlow() {
+            var selectedWorkflowId = $('#myWorkflows').find(":selected").val();
+            var url = 'https://web.flow.librestream.com/new/' + selectedWorkflowId + '?msdyn_workorder=' + workOrderId;
+            window.open(url);
+        }
+        
+        async function getOnsightApiAsync() {
+            // Librestream API key issued to the domain to which the Onsight user is part of
+            const result = await Xrm.WebApi.retrieveRecord("environmentvariablevalue", "738f3d87-5a7c-eb11-a812-000d3af3a657", "?$select=value");
+            return result.value;
+        }
+
+        async function getTeamNameAsync() {
+            // Onsight Flow team name for Proxy API
+            const result = await Xrm.WebApi.retrieveRecord("environmentvariablevalue", "5302ac13-38b0-ec11-983e-002248ade6b0", "?$select=value");
+            return result.value;
+        }
+
+        async function getFlowTokenAsync() {
+            const apiKey = await getOnsightApiAsync();
+            const teamName = await getTeamNameAsync();
+            const body = '{"teamName": "' + teamName + '"}';
+            var results = await fetch('https://flow-token-generator-app.azurewebsites.net/api/token', {
+                method: "POST",
+                mode: "cors",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': apiKey
+                },
+                body: body,
+                cache: "no-cache"
+            });
+            return results;
+        }
+
+        function generateFlowHtml(completedWorkflow) {
+            var content = `
+                <div class="accordion" id="accordianChild">
+                <h3>${completedWorkflow.metadata.jobTitle}</h3>
+                <div>
+                    <table style='width:100%'>
+                        <tr><td class="fontWeight">Title</td></tr>
+                        <tr><td>${completedWorkflow.metadata.jobTitle}</td></tr>
+
+                        <tr><td class="fontWeight">Updated</td></tr>
+                        <tr><td>${formatDateTime(completedWorkflow.metadata.updated)}</td></tr>
+                        <tr><td class="fontWeight">Active User</td></tr>
+                        <tr><td>${completedWorkflow.metadata.username}</td></tr>
+                        <tr><td class="fontWeight">Workflow</td></tr>
+                        <tr><td>${completedWorkflow.metadata.workflowName}</td></tr>
+                        <tr><td class="fontWeight">Status</td></tr>
+                        <tr><td>${completedWorkflow.metadata.status}</td></tr>
+                        <tr><td><div class="accordion">
+                            <h3>Completed Steps</h3>
+                            <table style='width:100%'>`;
+
+            if (completedWorkflow.completedSteps != null) {
+                completedWorkflow.completedSteps.forEach(step => {
+                    if (step.reportStep != null) {
+                        content += `<tr><td><span class="fontWeight">Step Title: </span>${step.reportStep.stepTitle}</td></tr>
+                                <tr><td><span class="fontWeight">Completed By: </span>${step.reportStep.userName}</td></tr>
+                                <tr><td><span class="fontWeight">Number of Steps: </span>${step.reportStep.steps.length}</td></tr>
+                                <tr><td><span class="fontWeight">Duration: </span>${timeDiffCalc(new Date(step.reportStep.completed), new Date(step.reportStep.started))}</td></tr>
+                                `;
+                        step.reportStep.steps.forEach(step => {
+                            content += `<tr><td><span class="fontWeight">Description: </span>${step.stepDescription}</td></tr>`;
+                            content += `<tr><td><span class="fontWeight">${step.stepTitle}: </span>${JSON.stringify(step.values)}</td></tr>`;
+                        });
+                        content += `<td style="border-bottom: 2px inset;"></td>`;
+                    }
+                    if (step.singleStep != null) {
+                        content += `<tr><td><span class="fontWeight">Step Title: </span>${step.singleStep.stepTitle}</td></tr>
+                            <tr><td><span class="fontWeight">Completed By: </span>${step.singleStep.userName}</td></tr>
+                            <tr><td><span class="fontWeight">Duration: </span>${timeDiffCalc(new Date(step.singleStep.completed), new Date(step.singleStep.started))}</td></tr>
+                            <tr><td><span class="fontWeight">Description: </span>${step.singleStep.stepDescription}</td></tr>
+                            <tr><td><span class="fontWeight">Input: </span>${JSON.stringify(step.singleStep.values)}</td></tr>`;
+
+                        content += `<td style="border-bottom: 2px inset;"></td>`;
+                    }
+                });
+            }
+
+            content += `</table></div></td></tr></table></div></div>`;
+            return content;
+        }
+
+        function formatDateTime(value) {
+            var m = new Date(value);
+            var dateString = (m.getUTCMonth() + 1) + "/" + m.getUTCDate() + "/" + m.getUTCFullYear() + " " + m.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            return dateString;
+        }
+
+        function timeDiffCalc(dateFuture, dateNow) {
+            let value = Math.abs(dateFuture - dateNow) / 1000;
+            const sec = parseInt(value, 10);
+            let hours = Math.floor(sec / 3600);
+            let minutes = Math.floor((sec - (hours * 3600)) / 60);
+            let seconds = sec - (hours * 3600) - (minutes * 60);
+            if (hours < 10) {
+                hours = "0" + hours;
+            }
+            if (minutes < 10) {
+                minutes = "0" + minutes;
+            }
+            if (seconds < 10) {
+                seconds = "0" + seconds;
+            }
+            return hours + ':' + minutes + ':' + seconds;
+        }
+
+        </script>
+    </head>
+    <body style="overflow-wrap: break-word;" onload="populateWorkFlowsAsync()">
+        <div id="loading" class="font font-family" style="padding-top: 110px; text-align: center; display:none;">Loading...</div>
+        <div class="content" id="mainContent" style="display:none;">
+            <div style="padding: 0px 0px 10px 0px;" class="font font-family">
+            Assign a Workflow for the Work Order to be launched here or from mobile, and Import Completed Workflows. The completed reports will be added as annotations under the Timeline.
+            </div>
+
+            <div class="font font-family">WORKFLOWS:</div>
+            <select name="myWorkflows" class="dd font font-family" style="width:100%" id="myWorkflows" onchange="setSelectedValue(this)">
+                <option value="0" disabled selected>Select a Workflow</option>
+            </select>
+            <div style="padding-top:15px;"></div>
+            <div>
+                <button id="launchFlowBtn" class="font-family" onclick="launchOnsightFlow()" disabled>Begin Workflow</button>
+                <button id="importFlowBtn" class="font-family" onclick="importCompletedWorkflow()">Import Completed Workflows</button>
+            </div>
+            <div style="padding-top:15px;"></div>
+            <div class="font" id="completedWorkflows" style="display: none;"></div>
+        </div>
+    </body>
+</html>

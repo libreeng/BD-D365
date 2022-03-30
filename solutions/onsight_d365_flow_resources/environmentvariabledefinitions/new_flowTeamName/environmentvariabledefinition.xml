@@ -1,0 +1,13 @@
+<environmentvariabledefinition schemaname="new_flowTeamName">
+  <description default="Onsight Flow team name for proxy">
+    <label description="Onsight Flow team name for proxy" languagecode="1033" />
+  </description>
+  <displayname default="flowTeamName">
+    <label description="flowTeamName" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>
