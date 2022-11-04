@@ -366,7 +366,7 @@
 
         async function launchOnsightFlow() {
             var selectedWorkflowId = $('#myWorkflows').find(":selected").val();
-            var url = 'https://web.flow.librestream.com/new/' + selectedWorkflowId + '?msdyn_workorder=' + workOrderId;
+            var url = 'https://flow.onsight.librestream.com/new/' + selectedWorkflowId + '?msdyn_workorder=' + workOrderId;
             window.open(url);
         }
         
