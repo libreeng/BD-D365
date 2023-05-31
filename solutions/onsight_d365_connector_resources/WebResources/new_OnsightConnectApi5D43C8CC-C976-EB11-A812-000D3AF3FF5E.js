@@ -65,6 +65,28 @@ const WorkOrder2RemoteExpertEmail = [
     ...BookableResource2Email
 ];
 
+const Contact2Email = [
+    {
+        entityLogicalName: "contact",
+        select: "emailaddress1",
+    },
+];
+
+const Customer2Email = [
+    {
+        entityLogicalName: "account",
+        select: "_primarycontactid_value",
+    },
+    ...Contact2Email,
+];
+
+const Incident2FieldTechEmail = [
+    {
+        entityLogicalName: "incident",
+        select: "_customerid_value",
+    },
+    ...Customer2Email,
+];
 
 /**
  * Removes all curly braces from the given string.
@@ -167,7 +189,10 @@ function getEmailAddressAsync(entityType, entityId, callTargetType) {
     let mappings = [];
     switch (entityType) {
         case "msdyn_workorder":
-            mappings = callTargetType === "fieldtech" ? WorkOrder2FieldTechEmail : WorkOrder2RemoteExpertEmail;
+            mappings =
+                callTargetType === "fieldtech"
+                    ? WorkOrder2FieldTechEmail
+                    : WorkOrder2RemoteExpertEmail;
             break;
         case "bookableresourcebooking":
             mappings = BookableResourceBooking2Email;
@@ -180,6 +205,9 @@ function getEmailAddressAsync(entityType, entityId, callTargetType) {
             break;
         case "contact":
             mappings = Contact2Email;
+            break;
+        case "incident":
+            mappings = Incident2FieldTechEmail;
             break;
     }
 
@@ -297,27 +325,48 @@ async function launchOnsightConnect(primaryControl, callTargetType) {
         return;
     }
 
+    // Onsight Connect needs to know if caller is using PC, iOS, or Android device
     var platformType = getPlatformType();
+    // Does Dynamics think current user is running on a mobile device?
     var clientType = clientContext.getClient();
+
+    // Onsight Connect needs to know the email address of the caller (the person initiating the call).
+    // We will infer this based on the current page's entity type (WorkOrder, Asset, Case, etc), but
+    // there may be other ways of obtaining this value based on how and where this solution is deployed.
     const callerEmail = await getEmailAddressAsync("systemuser", xrm.Page.context.getUserId());
     let emailTargetKey = contextEntity._entityType;
 
+    // When creating an Onsight Connect call, optional metadata can be supplied such that call recordings, transcripts,
+    // and other assets can be tagged and searched later. In this sample integration, we will pass in
+    // the top-level entitiy's ID, though any value could be passed in. Since this code could be called 
+    // from multiple pages, this code will need to be modified when using entities other than msdyn_workorder or incident.
     let metadata = {};
     if (primaryControl.entityReference) {
-        // Get the page's top-level entity, which may differ from the contextEntity above
+        // Get the page's top-level entity, which may differ from the contextEntity above.
         const topLevelEntity = primaryControl.entityReference;
         if (topLevelEntity.entityType === "msdyn_workorder") {
             metadata["WorkOrder"] = removeBraces(topLevelEntity.id);
             metadata["Asset"] = await getWorkOrderAssetAsync(topLevelEntity.id);
+        } else if (topLevelEntity.entityType === "incident") {
+            metadata["Case"] = removeBraces(topLevelEntity.id);
+            metadata["Request"] = metadata["Case"];
         }
     }
 
+    // Next, Onsight Connect will need the email address of the callee (person receiving the call).
+    // This reference implementation makes assumptions about where this value is located within Dynamics
+    // and is based on the type of entity currently in context.
+    // NOTE: the actual location of this value will depend on how and where this information is stored 
+    // within your production deployment and therefore this block will likely need to be modified to handle this.
     let calleeEmail = null;
     if (emailTargetKey && callTargetType) {
         // Map a generic contact (eg, "remote expert" or "fieldtech") to an actual person's email address
         calleeEmail = await getEmailAddressAsync(emailTargetKey, contextEntity._entityId.guid, callTargetType);
     }
 
+    // We now have the caller's email, the callee's email, and any metadata we wish to include.
+    // Depending on the caller's client device type, invoke the Onsight API to get an Onsight Call URL.
+    // This Onsight Call URL can then be opened in a new browser tab, triggering the Onsight Connect client to open as well.
     const launchRequestData = buildLaunchRequestData(callerEmail, calleeEmail, metadata);
     if (clientType === "Mobile" && platformType == PlatformTypes.Android) {
         // can't launch directly by setting the window location or navigating
